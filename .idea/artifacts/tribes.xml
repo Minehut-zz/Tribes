@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="tribes">
+    <output-path>$USER_HOME$/minehut/output</output-path>
+    <root id="archive" name="tribes.jar">
+      <element id="module-output" name="Tribes" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/plugin.yml" />
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+    </root>
+  </artifact>
+</component>

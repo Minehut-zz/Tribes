@@ -1,0 +1,4 @@
+name: Tribes
+main: com.minehut.tribes.Tribes
+version: 1.0
+depend: [Core, WorldGuard]
