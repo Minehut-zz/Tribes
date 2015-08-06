@@ -12,6 +12,7 @@ import com.minehut.tribes.teleport.TeleportManager;
 import com.minehut.tribes.tribe.player.TribePlayer;
 import com.minehut.tribes.tribe.*;
 import com.minehut.tribes.tribe.player.TribalRank;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -62,13 +63,7 @@ public class TribeComand extends Command {
                     return true;
                 }
 
-
-                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                    @Override
-                    public void run() {
-                        tribes.tribeManager.createNewTribe(player, args.get(1));
-                    }
-                });
+                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new CreateNewTribeRunnable(player.getUniqueId(), args.get(1)));
             } else {
                 F.message(player, "/tribe create (name)");
             }
@@ -187,51 +182,8 @@ public class TribeComand extends Command {
                 F.warning(player, "You do not belong to a tribe :(");
             } else {
                 if (args.size() == 2) {
-                    Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                        @Override
-                        public void run() {
-                            UUID setting = null;
-                            Player settingPlayer = Bukkit.getServer().getPlayer(args.get(1));
-                            if (settingPlayer == null) {
-                                UUIDFetcher uuidFetcher = new UUIDFetcher(Arrays.asList(args.get(1)));
-                                try {
-                                    setting = uuidFetcher.call().get(args.get(1));
-                                } catch (Exception e) {
-                                    setting = null;
-                                }
-                            } else {
-                                setting = settingPlayer.getUniqueId();
-                            }
-
-                            if (setting != null) {
-
-                                TribalRank settingTribalRank = tribeData.getTribalRank(setting);
-
-                                if (settingTribalRank != TribalRank.OUTSIDER) {
-                                    TribalRank playerTribalRank = tribeData.getTribalRank(player.getUniqueId());
-                                    if (settingTribalRank.compareTo(playerTribalRank) < 0) {
-                                        tribeData.setMember(setting);
-
-                                        tribeManager.updateTribeDataInDatabase(tribeData);
-
-                                        for (Player p : tribeData.getOnlinePlayers()) {
-                                            F.message(p, C.purple + args.get(1) + C.yellow + " had his tribal rank set to "
-                                                    + C.blue + C.bold + TribalRank.MEMBER.toString(), F.BroadcastType.FULL_BORDER);
-                                            S.plingHigh(p);
-                                        }
-                                    } else {
-                                        F.warning(player, "You do not have permission to derank " + C.purple + args.get(1));
-                                    }
-                                } else {
-                                    F.warning(player, C.purple + args.get(1) + C.gray + " is not part of your tribe");
-                                }
-                            } else {
-                                F.warning(player, "Couldn't find player " + C.purple + args.get(1));
-                            }
-
-                        }
-                    });
-
+                    Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, 
+                    		new SetMemberCommandRunnable(this.tribes, player.getUniqueId(), args.get(1)));
                 } else {
                     F.warning(player, "/t setmember (player)");
                 }
@@ -247,51 +199,8 @@ public class TribeComand extends Command {
                 F.warning(player, "You do not belong to a tribe :(");
             } else {
                 if (args.size() == 2) {
-                    Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                        @Override
-                        public void run() {
-                            UUID setting = null;
-                            Player settingPlayer = Bukkit.getServer().getPlayer(args.get(1));
-                            if (settingPlayer == null) {
-                                UUIDFetcher uuidFetcher = new UUIDFetcher(Arrays.asList(args.get(1)));
-                                try {
-                                    setting = uuidFetcher.call().get(args.get(1));
-                                } catch (Exception e) {
-                                    setting = null;
-                                }
-                            } else {
-                                setting = settingPlayer.getUniqueId();
-                            }
-
-                            if (setting != null) {
-
-                                TribalRank settingTribalRank = tribeData.getTribalRank(setting);
-
-                                if (settingTribalRank != TribalRank.OUTSIDER) {
-                                    TribalRank playerTribalRank = tribeData.getTribalRank(player.getUniqueId());
-                                    if (settingTribalRank.compareTo(playerTribalRank) < 0) {
-                                        tribeData.setElder(setting);
-
-                                        tribeManager.updateTribeDataInDatabase(tribeData);
-
-                                        for (Player p : tribeData.getOnlinePlayers()) {
-                                            F.message(p, C.purple + args.get(1) + C.yellow + " had his tribal rank set to "
-                                                    + C.blue + C.bold + TribalRank.ELDER.toString(), F.BroadcastType.FULL_BORDER);
-                                            S.plingHigh(p);
-                                        }
-                                    } else {
-                                        F.warning(player, "You do not have permission to derank " + C.purple + args.get(1));
-                                    }
-                                } else {
-                                    F.warning(player, C.purple + args.get(1) + C.gray + " is not part of your tribe");
-                                }
-                            } else {
-                                F.warning(player, "Couldn't find player " + C.purple + args.get(1));
-                            }
-
-                        }
-                    });
-
+                    Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, 
+                    		new SetlElderCommandRunnable(this.tribes, player.getUniqueId(), args.get(1)));
                 } else {
                     F.warning(player, "/t setelder (player)");
                 }
@@ -444,7 +353,7 @@ public class TribeComand extends Command {
                                             Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    tribeManager.startTribe(joiningTribeData);
+                                                    
                                                 }
                                             });
                                         }
@@ -480,11 +389,165 @@ public class TribeComand extends Command {
         return false;
     }
 
+    
+    
     public void listCommands(Player player) {
         F.message(player, "/tribe create (name)");
         F.message(player, "/tribe home");
         F.message(player, "/tribe deposit (amount)");
         F.message(player, "/tribe coins");
         F.message(player, "/tribe leave");
+    }
+    
+    public class CreateNewTribeRunnable implements Runnable {
+    	
+    	private UUID playerUUID;
+    	private String tribeName;
+    	
+    	public CreateNewTribeRunnable(UUID playerUUID, String tribeName) {
+    		this.playerUUID = playerUUID;
+    		this.tribeName = tribeName;
+    	}
+    	
+    	@Override
+    	public void run() {
+    		tribeManager.createNewTribe(Bukkit.getPlayer(this.playerUUID), this.tribeName);
+    	}
+    	
+    }
+    
+    public class SetMemberCommandRunnable implements Runnable {
+
+    	private TribeData tribeData;
+    	private UUID playerUUID;
+    	private String targetName;
+    	
+    	public SetMemberCommandRunnable(Tribes tribes, UUID playerUUID, String targetName) {
+    		this.playerUUID = playerUUID;
+    		this.targetName = targetName;
+    		this.tribeData = tribeManager.getTribeData(Bukkit.getPlayer(this.playerUUID));
+    		
+    	}
+    	
+    	@Override
+        public void run() {
+            UUID setting = null;
+            Player settingPlayer = Bukkit.getServer().getPlayer(this.targetName);
+            Player player = Bukkit.getPlayer(this.playerUUID);
+            if (settingPlayer == null) {
+                UUIDFetcher uuidFetcher = new UUIDFetcher(Arrays.asList(this.targetName));
+                try {
+                    setting = uuidFetcher.call().get(this.targetName);
+                } catch (Exception e) {
+                    setting = null;
+                }
+            } else {
+                setting = settingPlayer.getUniqueId();
+            }
+
+            if (setting != null) {
+
+                TribalRank settingTribalRank = tribeData.getTribalRank(setting);
+
+                if (settingTribalRank != TribalRank.OUTSIDER) {
+                    TribalRank playerTribalRank = tribeData.getTribalRank(this.playerUUID);
+                    if (settingTribalRank.compareTo(playerTribalRank) < 0) {
+                        tribeData.setMember(setting);
+
+                        tribeManager.updateTribeDataInDatabase(tribeData);
+
+                        for (Player p : tribeData.getOnlinePlayers()) {
+                            F.message(p, C.purple + this.targetName + C.yellow + " had his tribal rank set to "
+                                    + C.blue + C.bold + TribalRank.MEMBER.toString(), F.BroadcastType.FULL_BORDER);
+                            S.plingHigh(p);
+                        }
+                    } else {
+                        F.warning(player, "You do not have permission to derank " + C.purple + this.targetName);
+                    }
+                } else {
+                    F.warning(player, C.purple + this.targetName + C.gray + " is not part of your tribe");
+                }
+            } else {
+                F.warning(player, "Couldn't find player " + C.purple + this.targetName);
+            }
+
+        }
+
+    }
+
+    public class StartTribeRunnable implements Runnable {
+
+    	private TribeData joiningTribeData;
+    	
+    	public StartTribeRunnable(TribeData tribeData) {
+    		this.joiningTribeData = tribeData;
+    	}
+    	
+		@Override
+		public void run() {
+			tribeManager.startTribe(joiningTribeData);
+		}
+    	
+    }
+    
+    public class SetlElderCommandRunnable implements Runnable {
+
+    	private UUID playerUUID;
+    	private String targetName;
+    	private TribeData tribeData;
+    	
+    	
+    	public SetlElderCommandRunnable(Tribes tribes, UUID playerUUID, String targetName) {
+    		this.playerUUID = playerUUID;
+    		this.targetName = targetName;
+    		this.tribeData = tribeManager.getTribeData(Bukkit.getPlayer(this.playerUUID));
+    	}
+    	
+    	@Override
+        public void run() {
+            UUID setting = null;
+            Player player = Bukkit.getPlayer(this.playerUUID);
+            Player settingPlayer = Bukkit.getServer().getPlayer(this.targetName);
+            
+            
+            if (settingPlayer == null) {
+                UUIDFetcher uuidFetcher = new UUIDFetcher(Arrays.asList(this.targetName));
+                try {
+                    setting = uuidFetcher.call().get(this.targetName);
+                } catch (Exception e) {
+                    setting = null;
+                }
+            } else {
+                setting = settingPlayer.getUniqueId();
+            }
+
+            if (setting != null) {
+
+                TribalRank settingTribalRank = tribeData.getTribalRank(setting);
+
+                if (settingTribalRank != TribalRank.OUTSIDER) {
+                    TribalRank playerTribalRank = tribeData.getTribalRank(player.getUniqueId());
+                    if (settingTribalRank.compareTo(playerTribalRank) < 0) {
+                        tribeData.setElder(setting);
+
+                        tribeManager.updateTribeDataInDatabase(tribeData);
+
+                        for (Player p : tribeData.getOnlinePlayers()) {
+                            F.message(p, C.purple + this.targetName + C.yellow + " had his tribal rank set to "
+                                    + C.blue + C.bold + TribalRank.ELDER.toString(), F.BroadcastType.FULL_BORDER);
+                            S.plingHigh(p);
+                        }
+                    } else {
+                        F.warning(player, "You do not have permission to derank " + C.purple + this.targetName);
+                    }
+                } else {
+                    F.warning(player, C.purple + this.targetName + C.gray + " is not part of your tribe");
+                }
+            } else {
+                F.warning(player, "Couldn't find player " + C.purple + this.targetName);
+            }
+
+        }
+    	
     }
 }

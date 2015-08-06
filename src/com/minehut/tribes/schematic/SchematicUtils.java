@@ -74,8 +74,8 @@ public class SchematicUtils {
 		return null;
 	}
 
-	public static void paste(Schematic schematic, final Location loc){
-		final HashMap<Block, Integer> blocks = new HashMap<Block, Integer>();
+	public static void paste(Schematic schematic, Location loc){
+		HashMap<Block, Integer> blocks = new HashMap<Block, Integer>();
 		List<Block> allBlocks = new ArrayList<Block>();
 
 		for(int x = 0; x < schematic.getWidth(); x++){
@@ -91,7 +91,7 @@ public class SchematicUtils {
 			}
 		}
 
-		final List<Block> orderedBlocks = new ArrayList<Block>();
+		List<Block> orderedBlocks = new ArrayList<Block>();
 
 		orderedBlocks.addAll(allBlocks);
 
@@ -102,54 +102,75 @@ public class SchematicUtils {
 			}
 		});
 
-		final int size = orderedBlocks.size();
-		final int blocksPerTime = 3;
-		final long delay = 1L;
+		int size = orderedBlocks.size();
+		
+		long delay = 1L;
 
 		if(size > 0){
-			new BukkitRunnable(){
-				int index = 0;
-
-				@Override
-				public void run(){
-					for(int i = 0; i < blocksPerTime; i++){
-						if(index < size){
-							Block block = orderedBlocks.get(index);
-							int otherIndex = blocks.get(block);
-							int typeId = schematic.getBlocks()[otherIndex];
-							byte data = schematic.getData()[otherIndex];
-							Material material = Material.getMaterial(typeId);
-
-							while (material == Material.AIR && block.getType() == Material.AIR) {
-								index += 1;
-
-								if (index >= size) {
-									this.cancel();
-									return;
-								}
-
-								block = orderedBlocks.get(index);
-								otherIndex = blocks.get(block);
-								typeId = schematic.getBlocks()[otherIndex];
-								data = schematic.getData()[otherIndex];
-								material = Material.getMaterial(typeId);
-							}
-
-							if(!(block.getLocation().equals(loc))){
-								regenerateBlock(block, Material.getMaterial(typeId), data);
-							}
-
-							index += 1;
-						} else {
-							this.cancel();
-							return;
-						}
-					}
-				}
-			}.runTaskTimer(Tribes.instance, 40L, delay);
+			new PasteRunnable(schematic, orderedBlocks, blocks, loc).runTaskTimer(Tribes.instance, 40L, delay);
 		}
 	}
 
+	public static class PasteRunnable extends BukkitRunnable { //Simple work around to avoid using final
+
+		int size = 0;
+		int index = 0;
+		int blocksPerTime = 3;
+		
+		Schematic schematic;
+		List<Block> orderedBlocks;
+		Location loc;
+		HashMap<Block, Integer> blocks;
+		
+		public PasteRunnable(Schematic schematic, List<Block> orderedBlocks, HashMap<Block, Integer> blocks, Location loc) {
+			this.schematic = schematic;
+			this.orderedBlocks = orderedBlocks;
+			this.size = orderedBlocks.size();
+			this.blocks = blocks;
+			this.loc = loc;
+		}
+
+		
+		@Override
+		public void run(){
+			for(int i = 0; i < blocksPerTime; i++){
+				if(index < size){
+					Block block = orderedBlocks.get(index);
+					int otherIndex = blocks.get(block);
+					int typeId = schematic.getBlocks()[otherIndex];
+					byte data = schematic.getData()[otherIndex];
+					Material material = Material.getMaterial(typeId);
+
+					while (material == Material.AIR && block.getType() == Material.AIR) {
+						index += 1;
+
+						if (index >= size) {
+							this.cancel();
+							return;
+						}
+
+						block = orderedBlocks.get(index);
+						otherIndex = blocks.get(block);
+						typeId = schematic.getBlocks()[otherIndex];
+						data = schematic.getData()[otherIndex];
+						material = Material.getMaterial(typeId);
+					}
+
+					if(!(block.getLocation().equals(loc))){
+						regenerateBlock(block, Material.getMaterial(typeId), data);
+					}
+
+					index += 1;
+				} else {
+					this.cancel();
+					return;
+				}
+			}
+		}
+		
+	}
+	
+	
 	public static void regenerateBlocks(Collection<Block> blocks, final Material type, final byte data, final int blocksPerTime, final long delay, Comparator<Block> comparator) {
 		final List<Block> orderedBlocks = new ArrayList<Block>();
 

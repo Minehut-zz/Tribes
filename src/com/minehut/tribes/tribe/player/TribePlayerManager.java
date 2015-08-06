@@ -86,31 +86,39 @@ public class TribePlayerManager implements Listener {
         if (tribe == null) {
             if (tribeData != null) {
                 if(!tribeManager.loading.contains(tribeData)) {
-                    Bukkit.getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                        @Override
-                        public void run() {
-                            tribeManager.startTribe(tribeData);
-                        }
-                    });
+                    Bukkit.getScheduler().runTaskAsynchronously(Tribes.instance, new StartTribeRunnable(tribeData));
                 }
             }
         }
-
-        Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-            @Override
-            public void run() {
-                if (loadDatabaseInfo(tribePlayer)) {
-                    F.broadcast(tribePlayer.getFormattedName() + C.purple + " has joined for the first time!");
-                } else {
-                    F.broadcast(tribePlayer.getFormattedName() + C.gray + " joined the game");
-                }
-                tribePlayer.loaded = true;
-            }
-        });
+        
+        //TODO: What happens to the tribePlayer object???
+        //It is loaded into/from mongo but then just is not cached or anything after this function
+        Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new LoadTribePlayer(tribePlayer));
 
         event.setJoinMessage("");
     }
-
+    
+    public class LoadTribePlayer implements Runnable {
+    	
+    	private TribePlayer tribePlayer;
+    	
+    	public LoadTribePlayer(TribePlayer tribePlayer) {
+    		this.tribePlayer = tribePlayer;
+    	}
+    	
+    	 @Override
+         public void run() {
+             if (loadDatabaseInfo(tribePlayer)) {
+                 F.broadcast(tribePlayer.getFormattedName() + C.purple + " has joined for the first time!");
+             } else {
+                 F.broadcast(tribePlayer.getFormattedName() + C.gray + " joined the game");
+             }
+             tribePlayer.loaded = true;
+             //TODO: save tribePlayer object somewhere?
+         }
+    	
+    }
+    
     /* Returns true if player is new */
     private boolean loadDatabaseInfo(TribePlayer tribePlayer) {
         if(tribePlayer.player != null) {
@@ -156,4 +164,20 @@ public class TribePlayerManager implements Listener {
     public void onKick(PlayerKickEvent event) {
         this.tribePlayers.remove(this.getTribePlayer(event.getPlayer()));
     }
+    
+    public class StartTribeRunnable implements Runnable {
+    	
+    	private TribeData tribeData;
+    	
+    	public StartTribeRunnable(TribeData tribeData) {
+    		this.tribeData = tribeData;
+    	}
+    	
+    	@Override
+        public void run() {
+            tribeManager.startTribe(tribeData);
+        }
+    	
+    }
+    
 }

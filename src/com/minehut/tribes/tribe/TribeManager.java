@@ -404,23 +404,12 @@ public class TribeManager implements Listener {
             return tribe;
         } else {
             /* Was deleted while loading up */
-            Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        FileUtils.deleteDirectory(new File("tribes/" + tribeData.uuid.toString()));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    removeFromDatabase(tribeData);
-                }
-            });
+            Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new RemoveTribeData(tribeData));
 
             return null;
         }
     }
-
+    
     public void removeFromTribe(DataPlayer dataPlayer, TribeData tribeData) {
         tribeData.dataPlayers.remove(dataPlayer);
 
@@ -434,12 +423,7 @@ public class TribeManager implements Listener {
             S.playSound(player, Sound.GLASS);
         }
 
-        Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-            @Override
-            public void run() {
-                updateTribeDataInDatabase(tribeData);
-            }
-        });
+        Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new UpdateTribeDataRunnable(tribeData));
 
 
         for (Player player1 : tribeData.getOnlinePlayers()) {
@@ -486,7 +470,7 @@ public class TribeManager implements Listener {
                 if (tribe != null) {
                     tribe.unload();
                 }
-
+/*
                 Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
                     @Override
                     public void run() {
@@ -497,7 +481,7 @@ public class TribeManager implements Listener {
                         }
                     }
                 });
-
+*/
                 F.broadcast("The Tribe " + C.aqua + tribeData.name + C.yellow + " was " + C.red + "disbanded", F.BroadcastType.MINIMAL_BORDER);
 
 
@@ -507,23 +491,13 @@ public class TribeManager implements Listener {
 
                 this.tribeDatas.remove(tribeData);
 
-                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                    @Override
-                    public void run() {
-                        removeFromDatabase(tribeData);
-                    }
-                });
+                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new RemoveTribeData(tribeData));
 
 
             } else {
                 F.message(player, "You have left " + C.purple + tribeData.name);
 
-                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                    @Override
-                    public void run() {
-                        updateTribeDataInDatabase(tribeData);
-                    }
-                });
+                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new UpdateTribeDataRunnable(tribeData));
             }
 
         }
@@ -584,5 +558,41 @@ public class TribeManager implements Listener {
 
         return updatedCoins;
     }
+    
+    public class RemoveTribeData implements Runnable {
 
+    	private TribeData tribeData;
+    	
+    	public RemoveTribeData(TribeData tribeData) {
+    		this.tribeData = tribeData;
+    	}
+    	
+    	@Override
+        public void run() {
+            try {
+                FileUtils.deleteDirectory(new File("tribes/" + tribeData.uuid.toString()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            removeFromDatabase(tribeData);
+        }
+    	
+    }
+    
+    public class UpdateTribeDataRunnable implements Runnable {
+
+    	private TribeData tribeData;
+    	
+    	public UpdateTribeDataRunnable(TribeData tribeData) {
+    		this.tribeData = tribeData;
+    	}
+    	
+    	@Override
+        public void run() {
+            updateTribeDataInDatabase(tribeData);
+        }
+    	
+    }
+    
 }

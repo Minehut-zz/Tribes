@@ -39,20 +39,7 @@ public class TribeChunkCommand extends Command {
                                 if (args.get(0).equalsIgnoreCase("view")) {
                                     if (tribeChunk.tribeChunkType == TribeChunk.TribeChunkType.wild) {
                                         if (tribeChunk.hasOwner()) {
-                                            Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    NameFetcher nameFetcher = new NameFetcher(Arrays.asList(tribeChunk.owner));
-                                                    try {
-                                                        Map<UUID, String> names = nameFetcher.call();
-                                                        if (player != null) {
-                                                            F.message(player, "This chunk is owned by " + C.purple + names.get(tribeChunk.owner));
-                                                        }
-                                                    } catch (Exception e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                }
-                                            });
+                                            Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new ViewCommandRunnable(player.getUniqueId(), tribeChunk));
 
                                         } else {
                                             F.message(player, "This chunk is not owned by any Tribe Member");
@@ -77,12 +64,7 @@ public class TribeChunkCommand extends Command {
                                                 F.message(owner, "You have been given ownership of a plot");
                                                 S.plingHigh(owner);
 
-                                                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        Tribes.instance.tribeManager.updateTribeDataInDatabase(tribePlayer.tribeData);
-                                                    }
-                                                });
+                                                Bukkit.getServer().getScheduler().runTaskAsynchronously(Tribes.instance, new UpdateTribeDataInDatabaseRunnable(tribePlayer));
                                             } else {
                                                 F.warning(player, C.purple + owner.getName() + C.gray + " is not part of your tribe");
                                             }
@@ -115,6 +97,45 @@ public class TribeChunkCommand extends Command {
         return false;
     }
 
+    public class ViewCommandRunnable implements Runnable {
+    	
+    	private TribeChunk tribeChunk;
+    	private UUID playerUUID;
+    	
+    	public ViewCommandRunnable(UUID playerUUID, TribeChunk tribeChunk) {
+    		this.playerUUID = playerUUID;
+    		this.tribeChunk = tribeChunk;
+    	}
+    	
+    	@Override
+        public void run() {
+    		Player player = Bukkit.getPlayer(this.playerUUID);
+            NameFetcher nameFetcher = new NameFetcher(Arrays.asList(tribeChunk.owner));
+            try {
+                Map<UUID, String> names = nameFetcher.call();
+                if (player != null) {
+                    F.message(player, "This chunk is owned by " + C.purple + names.get(tribeChunk.owner));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    public class UpdateTribeDataInDatabaseRunnable implements Runnable {
+    	
+    	public TribePlayer tribePlayer;
+    	
+    	public UpdateTribeDataInDatabaseRunnable(TribePlayer tribePlayer) {
+    		this.tribePlayer = tribePlayer;
+    	}
+    	
+    	@Override
+        public void run() {
+            Tribes.instance.tribeManager.updateTribeDataInDatabase(tribePlayer.tribeData);
+        }
+    }
+    
     public void showCommands(Player player) {
         F.warning(player, "/chunk setowner (player)");
         F.warning(player, "/chunk view");
